@@ -4,26 +4,86 @@
     <meta charset="UTF-8">
     <title>Hiper Chat Local!</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .chat-container { width: 100%; max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        #messages { list-style-type: none; padding: 0; height: 300px; overflow-y: scroll; border: 1px solid #ddd; margin-bottom: 10px; padding: 10px; background: #fafafa; }
-        #messages li { padding: 8px; margin-bottom: 5px; border-bottom: 1px solid #eee; }
-        .form-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        input { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        input:disabled { background-color: #e9ecef; color: #495057; cursor: not-allowed; font-weight: bold; }
-        #user { width: 30%; }
-        #messageInput { flex: 1; }
-        button { padding: 10px 20px; background: #007BFF; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
+        :root { color-scheme: light; font-family: Inter, "Segoe UI", Arial, sans-serif; color: #20263a; background: #f3f5fb; }
+        * { box-sizing: border-box; }
+        body { min-height: 100vh; margin: 0; padding: 32px 20px; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 0%, #e8eaff 0, #f3f5fb 52%, #f7f8fc 100%); }
+        .chat-container { width: min(100%, 780px); min-height: min(680px, calc(100vh - 64px)); display: flex; flex-direction: column; padding: 26px; background: rgba(255,255,255,.96); border: 1px solid #e7eaf2; border-radius: 24px; box-shadow: 0 24px 70px rgba(37,45,82,.12), 0 3px 10px rgba(37,45,82,.04); }
+        .chat-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+        h2 { margin: 0; color: #20263a; font-size: clamp(22px, 3vw, 28px); letter-spacing: -.7px; }
+        #themeToggle { display: grid; place-items: center; width: 44px; min-height: 44px; flex: 0 0 44px; padding: 0; border: 1px solid #e7eaf2; border-radius: 14px; color: #5149c7; background: #f4f3ff; box-shadow: none; font-size: 23px; }
+        #themeToggle:hover { background: #eeedff; box-shadow: 0 4px 12px rgba(69,62,150,.12); }
+        #messages { list-style: none; flex: 1; min-height: 300px; max-height: 58vh; overflow-y: auto; margin: 0 0 20px; padding: 16px; background: #fbfcff; border: 1px solid #e8ebf3; border-radius: 18px; scrollbar-color: #cdd2e2 transparent; scrollbar-width: thin; }
+        #messages li { padding: 10px 4px; margin-bottom: 7px; border-bottom: 1px solid #edf0f5; }
+        #messages li:not(.empty-state) { display: flex; align-items: flex-start; gap: 10px; }
+        .avatar { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 36px; border-radius: 12px; color: var(--user-color); background: color-mix(in srgb, var(--user-color) 14%, white); font-size: 13px; font-weight: 750; }
+        .message-content { min-width: 0; }
+        .message-meta { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; }
+        .message-meta strong { color: var(--user-color); font-size: 13px; }
+        .message-meta time { color: #8b93a5; font-size: 11px; }
+        .bubble { padding: 10px 13px; border-left: 3px solid var(--user-color); border-radius: 3px 13px 13px; background: color-mix(in srgb, var(--user-color) 9%, white); color: #30394e; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .form-group { display: flex; align-items: stretch; gap: 10px; margin-bottom: 0; }
+        input { min-height: 48px; padding: 0 14px; border: 1px solid #e0e4ed; border-radius: 13px; color: #283247; background: #fff; font: inherit; outline: none; transition: border-color .16s, box-shadow .16s, background .16s; }
+        input::placeholder { color: #9aa2b1; }
+        input:focus { border-color: #8d85eb; box-shadow: 0 0 0 4px rgba(99,91,219,.12); }
+        input:disabled { color: #596276; background: #f2f3f7; cursor: not-allowed; font-weight: 650; }
+        .identity-control { display: flex; width: 34%; min-width: 190px; gap: 7px; }
+        #user { width: 100%; min-width: 0; }
+        .color-picker { display: grid; place-items: center; width: 48px; flex: 0 0 48px; border: 1px solid #e0e4ed; border-radius: 13px; cursor: pointer; background: #fff; transition: border-color .16s, box-shadow .16s; }
+        .color-picker:hover { border-color: #c7c3f4; box-shadow: 0 3px 10px rgba(44,52,89,.08); }
+        #userColor { width: 27px; height: 27px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
+        #userColor::-webkit-color-swatch-wrapper { padding: 0; }
+        #userColor::-webkit-color-swatch { border: 0; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #e4e7ef; }
+        #userColor::-moz-color-swatch { border: 0; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 0 0 3px #e4e7ef; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+        #messageInput { flex: 1; min-width: 80px; }
+        button { min-height: 48px; padding: 0 22px; border: 0; border-radius: 13px; color: #fff; background: linear-gradient(135deg, #7169e8, #554dcc); box-shadow: 0 6px 14px rgba(99,91,219,.22); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform .16s, box-shadow .16s, filter .16s; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 9px 18px rgba(99,91,219,.28); filter: brightness(1.04); }
+        button:active { transform: translateY(0); }
+        button:focus-visible, .color-picker:focus-within { outline: 3px solid #c9c5ff; outline-offset: 2px; }
+        body, .chat-container, #messages, input, .color-picker, .bubble { transition: background-color .2s, color .2s, border-color .2s, box-shadow .2s; }
+        body.dark-mode { color-scheme: dark; background: radial-gradient(ellipse at 50% 0%, #252943 0, #171a28 55%, #11131d 100%); }
+        .dark-mode .chat-container { background: rgba(27,30,45,.97); border-color: #34384d; box-shadow: 0 24px 70px rgba(0,0,0,.32), 0 3px 10px rgba(0,0,0,.2); }
+        .dark-mode h2 { color: #f1f2fa; }
+        .dark-mode #messages { background: #171a28; border-color: #34384d; scrollbar-color: #555b76 transparent; }
+        .dark-mode #messages li { border-bottom-color: #2b3042; }
+        .dark-mode .message-meta time { color: #a3a9bb; }
+        .dark-mode .bubble { background: color-mix(in srgb, var(--user-color) 22%, #252a3a); color: #f0f1f7; }
+        .dark-mode input { color: #f0f1f7; background: #202436; border-color: #3b4056; }
+        .dark-mode input::placeholder { color: #a0a7ba; }
+        .dark-mode input:disabled { color: #bbc0ce; background: #292e40; }
+        .dark-mode .color-picker { background: #202436; border-color: #3b4056; }
+        .dark-mode #userColor::-webkit-color-swatch { box-shadow: 0 0 0 2px #202436, 0 0 0 3px #515770; }
+        .dark-mode #userColor::-moz-color-swatch { box-shadow: 0 0 0 2px #202436, 0 0 0 3px #515770; }
+        .dark-mode #themeToggle { color: #ffe18a; background: #292e42; border-color: #444a63; }
+        .dark-mode #themeToggle:hover { background: #343a52; }
+        @media (max-width: 560px) {
+            body { padding: 0; background: #fff; }
+            .chat-container { width: 100%; min-height: 100dvh; padding: 20px 16px; border: 0; border-radius: 0; box-shadow: none; }
+            .chat-header { margin-bottom: 18px; }
+            body.dark-mode { background: #11131d; }
+            #messages { max-height: none; }
+            .form-group { flex-wrap: wrap; }
+            .identity-control { width: 100%; min-width: 0; }
+            #messageInput { flex: 1 1 60%; }
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <h2>Hiper Chat Local!</h2>
+        <header class="chat-header">
+            <h2>Hiper Chat Local!</h2>
+            <button id="themeToggle" type="button" aria-label="Ativar modo noturno" title="Ativar modo noturno">☾</button>
+        </header>
         <ul id="messages"></ul>
         <form id="form">
             <div class="form-group">
-                <input id="user" placeholder="Seu Nome" required />
+                <div class="identity-control">
+                    <input id="user" placeholder="Seu Nome" aria-label="Seu nome" maxlength="40" required />
+                    <label class="color-picker" for="userColor" title="Escolha a cor das suas mensagens">
+                        <span class="sr-only">Escolha a cor das suas mensagens</span>
+                        <input id="userColor" type="color" value="#635bdb" aria-label="Cor das suas mensagens" />
+                    </label>
+                </div>
                 <input id="messageInput" placeholder="Digite sua mensagem..." autocomplete="off" required />
                 <button>Enviar</button>
             </div>
@@ -36,8 +96,47 @@
         const form = document.getElementById('form');
         const input = document.getElementById('messageInput');
         const user = document.getElementById('user');
+        const userColor = document.getElementById('userColor');
         const messages = document.getElementById('messages');
+        const themeToggle = document.getElementById('themeToggle');
         let userLocked = false;
+
+        function setNightMode(enabled) {
+            document.body.classList.toggle('dark-mode', enabled);
+            themeToggle.textContent = enabled ? '☀' : '☾';
+            const label = enabled ? 'Ativar modo claro' : 'Ativar modo noturno';
+            themeToggle.setAttribute('aria-label', label);
+            themeToggle.title = label;
+            try {
+                localStorage.setItem('hiper-chat-night-mode', enabled ? 'on' : 'off');
+            } catch (error) {
+                // O modo continua funcionando nesta página sem armazenamento local.
+            }
+        }
+
+        try {
+            setNightMode(localStorage.getItem('hiper-chat-night-mode') === 'on');
+        } catch (error) {
+            setNightMode(false);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            setNightMode(!document.body.classList.contains('dark-mode'));
+        });
+
+        try {
+            userColor.value = localStorage.getItem('hiper-chat-user-color') || userColor.value;
+        } catch (error) {
+            // O seletor continua funcionando mesmo se o navegador bloquear o armazenamento local.
+        }
+
+        userColor.addEventListener('input', () => {
+            try {
+                localStorage.setItem('hiper-chat-user-color', userColor.value);
+            } catch (error) {
+                // A escolha permanece ativa nesta página mesmo sem armazenamento local.
+            }
+        });
 
         function lockUserAndRegisterLogin() {
             const username = user.value.trim();
@@ -59,7 +158,8 @@
                 socket.emit('chat-message', {
                     user: user.value.trim(),
                     text: input.value,
-                    time: new Date().toLocaleTimeString()
+                    time: new Date().toLocaleTimeString(),
+                    color: userColor.value
                 });
                 input.value = '';
                 input.focus();
@@ -68,7 +168,30 @@
 
         socket.on('chat-message', (msg) => {
             const item = document.createElement('li');
-            item.innerHTML = `<strong>${msg.user}</strong> <span style="font-size: 0.8em; color: gray;">(${msg.time})</span>: ${msg.text}`;
+            const messageColor = /^#[0-9a-f]{6}$/i.test(msg.color || '') ? msg.color : '#635bdb';
+            item.style.setProperty('--user-color', messageColor);
+            if (user.value.trim() && msg.user === user.value.trim()) item.classList.add('own');
+
+            const avatar = document.createElement('span');
+            avatar.className = 'avatar';
+            avatar.textContent = (msg.user || '?').trim().charAt(0).toLocaleUpperCase('pt-BR');
+            avatar.setAttribute('aria-hidden', 'true');
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+            const name = document.createElement('strong');
+            name.textContent = msg.user || 'Anônimo';
+            const time = document.createElement('time');
+            time.textContent = msg.time || '';
+            meta.append(name, time);
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = msg.text || '';
+            content.append(meta, bubble);
+            item.append(avatar, content);
             messages.appendChild(item);
             messages.scrollTop = messages.scrollHeight;
         });
